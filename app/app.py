@@ -100,8 +100,8 @@ def read_and_parse_data(serial_connection):
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(description="Universal Serial Device Interface")
-    arg_parser.add_argument("--device", type=str, default="/dev/ttyUSB0", help="Device to read")
-    arg_parser.add_argument("--baud_rate", type=int, default=9600, help="Baud rate for the device")
+    arg_parser.add_argument("--device", type=str, help="Device to read", required = True)
+    arg_parser.add_argument("--baud_rate", type=int, help="Baud rate for the device", required = True)
     arg_parser.add_argument("--debug", action="store_true", help="Run script in debug mode")
     args = arg_parser.parse_args()
 
