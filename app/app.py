@@ -71,6 +71,7 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
 
     with Plugin() as plugin:
         serial_connection = connect_to_device(device, baud_rate)
+        time.sleep(2)
 
         while True:
             try:
@@ -83,11 +84,11 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
             except ValueError as e:
                     logging.error(f"Value error: {e}")
             except KeyboardInterrupt:
-                    logging.info("Interrupt received, shutting down.")
+                    logging.info("Key Interrupt received, shutting down.")
                     break
             except Exception as e:
                     logging.error(f"Unexpected error: {e}")
-            break
+                    break
 
         if serial_connection and not serial_connection.closed:
             serial_connection.close()
@@ -95,7 +96,7 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
 
 def read_and_parse_data(serial_connection, data_names):
     """
-    Reads and parses data from the serial connection.
+    Reads and parses data from the serial connection. Assumes "\r" linebreak.
 
     :param serial_connection: The serial connection object.
     :return: A dictionary of parsed data.
@@ -107,10 +108,10 @@ def read_and_parse_data(serial_connection, data_names):
         data_dict = dict(zip(keys, values))
         return data_dict
     except serial.SerialException as e:
-        print(f"Serial error: {e}")
+        logging.error(f"Serial error: {e}")
         raise
     except ValueError as e:
-        print(f"Value error: {e}")
+        logging.error(f"Value error: {e}")
         raise
 
 
@@ -155,4 +156,4 @@ if __name__ == "__main__":
             args.device, args.baud_rate, sonic_data_names, sonic_meta, debug=args.debug
         )
     except Exception as e:
-        print(f"Error running device interface: {e}")
+        logging.error(f"Error running device interface: {e}")
