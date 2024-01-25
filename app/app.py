@@ -6,6 +6,8 @@ import sys
 import time
 from waggle.plugin import Plugin  # , get_timestamp
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def connect_to_device(device, baud_rate):
     """
@@ -24,7 +26,7 @@ def connect_to_device(device, baud_rate):
             stopbits=serial.STOPBITS_ONE,
         )
     except serial.SerialException as e:
-        print(f"Error connecting to device: {e}")
+        logging.error(f"Error connecting to device: {e}")
         raise
     return serial_connection
 
@@ -76,9 +78,17 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
                 if debug:
                     print(data)
                 publish_data(plugin, data, data_names, meta)
+            except serial.SerialException as e:
+                    logging.error(f"Serial error: {e} while reading data.")
+            except ValueError as e:
+                    logging.error(f"Value error: {e}")
+            except KeyboardInterrupt:
+                    logging.info("Interrupt received, shutting down.")
+                    break
             except Exception as e:
-                print("Error:", e)
-                break
+                    logging.error(f"Unexpected error: {e}")
+            break
+
         if serial_connection and not serial_connection.closed:
             serial_connection.close()
 
@@ -115,7 +125,7 @@ if __name__ == "__main__":
     )
     args = arg_parser.parse_args()
 
-    # The `key` order should be same as the data stream.
+    # The `key` order should be same as the order of variables in the data stream.
     sonic_data_names = OrderedDict(
         [
             ("U", "sonic3d.uwind"),
