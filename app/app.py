@@ -1,9 +1,11 @@
 import serial
 from argparse import ArgumentParser
 import logging
+from collections import OrderedDict
 import sys
 import time
-from waggle.plugin import Plugin #, get_timestamp
+from waggle.plugin import Plugin  # , get_timestamp
+
 
 def connect_to_device(device, baud_rate):
     """
@@ -25,6 +27,7 @@ def connect_to_device(device, baud_rate):
         print(f"Error connecting to device: {e}")
         raise
     return serial_connection
+
 
 def publish_data(plugin, data, data_names, meta, additional_meta=None):
     """
@@ -52,6 +55,7 @@ def publish_data(plugin, data, data_names, meta, additional_meta=None):
             except KeyError as e:
                 print(f"Error: Missing key in meta data - {e}")
 
+
 def run_device_interface(device, baud_rate, data_names, meta, debug=False):
     """
     Runs the device interface for reading and publishing data.
@@ -68,7 +72,7 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
 
         while True:
             try:
-                data = read_and_parse_data(serial_connection)
+                data = read_and_parse_data(serial_connection, data_names)
                 if debug:
                     print(data)
                 publish_data(plugin, data, data_names, meta)
@@ -78,7 +82,8 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
         if serial_connection and not serial_connection.closed:
             serial_connection.close()
 
-def read_and_parse_data(serial_connection):
+
+def read_and_parse_data(serial_connection, data_names):
     """
     Reads and parses data from the serial connection.
 
@@ -87,7 +92,7 @@ def read_and_parse_data(serial_connection):
     """
     try:
         line = serial_connection.read_until(b"\r").decode("utf-8").rstrip().split()
-        keys = ["U", "V", "W", "T"]
+        keys = data_names.keys()
         values = [float(value) for value in line]
         data_dict = dict(zip(keys, values))
         return data_dict
@@ -98,36 +103,46 @@ def read_and_parse_data(serial_connection):
         print(f"Value error: {e}")
         raise
 
+
 if __name__ == "__main__":
     arg_parser = ArgumentParser(description="Universal Serial Device Interface")
-    arg_parser.add_argument("--device", type=str, help="Device to read", required = True)
-    arg_parser.add_argument("--baud_rate", type=int, help="Baud rate for the device", required = True)
-    arg_parser.add_argument("--debug", action="store_true", help="Run script in debug mode")
+    arg_parser.add_argument("--device", type=str, help="Device to read", required=True)
+    arg_parser.add_argument(
+        "--baud_rate", type=int, help="Baud rate for the device", required=True
+    )
+    arg_parser.add_argument(
+        "--debug", action="store_true", help="Run script in debug mode"
+    )
     args = arg_parser.parse_args()
 
-    sonic_data_names = {
-        "T": "sonic3d.temp",
-        "U": "sonic3d.uwind",
-        "V": "sonic3d.vwind",
-        "W": "sonic3d.wwind",
-    }
+    # The `key` order should be same as the data stream.
+    sonic_data_names = OrderedDict(
+        [
+            ("U", "sonic3d.uwind"),
+            ("V", "sonic3d.vwind"),
+            ("W", "sonic3d.wwind"),
+            ("T", "sonic3d.temp"),
+        ]
+    )
     sonic_meta = {
         "sensor": "RMYong-sonic3D",
         "units": {
-            "sonic3d.temp": "degrees Celsius",
             "sonic3d.uwind": "m/s",
             "sonic3d.vwind": "m/s",
             "sonic3d.wwind": "m/s",
+            "sonic3d.temp": "degrees Celsius",
         },
         "description": {
-            "sonic3d.temp": "Ambient Temperature",
             "sonic3d.uwind": "zonal wind",
             "sonic3d.vwind": "meridional wind",
             "sonic3d.wwind": "vertical wind",
+            "sonic3d.temp": "Ambient Temperature",
         },
     }
 
     try:
-        run_device_interface(args.device, args.baud_rate, sonic_data_names, sonic_meta, debug=args.debug)
+        run_device_interface(
+            args.device, args.baud_rate, sonic_data_names, sonic_meta, debug=args.debug
+        )
     except Exception as e:
         print(f"Error running device interface: {e}")
