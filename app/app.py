@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import logging
 import sys
 import time
-from waggle.plugin import Plugin, get_timestamp
+from waggle.plugin import Plugin #, get_timestamp
 
 def connect_to_device(device, baud_rate):
     """
@@ -62,10 +62,10 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
     :param meta: Metadata associated with the data.
     :param debug: Boolean flag to enable debug mode.
     """
-    serial_connection = connect_to_device(device, baud_rate)
-    plugin = Plugin()
 
-    with plugin:
+    with Plugin() as plugin:
+        serial_connection = connect_to_device(device, baud_rate)
+
         while True:
             try:
                 data = read_and_parse_data(serial_connection)
@@ -75,9 +75,8 @@ def run_device_interface(device, baud_rate, data_names, meta, debug=False):
             except Exception as e:
                 print("Error:", e)
                 break
-
-    if serial_connection and not serial_connection.closed:
-        serial_connection.close()
+        if serial_connection and not serial_connection.closed:
+            serial_connection.close()
 
 def read_and_parse_data(serial_connection):
     """
